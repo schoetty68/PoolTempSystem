@@ -7,9 +7,14 @@ import static org.rrd4j.DsType.GAUGE;
 
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Calendar;
 
 import org.rrd4j.core.FetchData;
 import org.rrd4j.core.FetchRequest;
@@ -29,11 +34,12 @@ public class PoolThread extends Thread {
 	Sample sample;
 	
 	//startwert für datenbank
-	private long start=1;
-	//private long start=System.currentTimeMillis();
+	//private long start=1;
+	private long steps = 10;
+	private long start=(System.currentTimeMillis()/1000);
 	private long t =start;
 	
-	private int wert =1;
+	private double wert =1;
 	
 	//mein kram
 	boolean stop = true;
@@ -44,6 +50,7 @@ public class PoolThread extends Thread {
 			
 			try {
 				datenSpeichern();
+				System.out.println("------------------\nIn der run() nach dem speichern vorm auslesen\n-------------------");
 				datenAuslesen();
 				
 				Thread.sleep(10000);
@@ -56,6 +63,30 @@ public class PoolThread extends Thread {
 			
 		}
 		System.out.println("Thread beendet");
+	}
+	
+	public void datenHolen() throws Exception{
+		String url = "http://192.168.1.76";
+		URL obj = new URL(url);
+		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+		// optional default is GET
+		con.setRequestMethod("GET");
+		//add request header
+		con.setRequestProperty("User-Agent", "Mozilla/5.0");
+		int responseCode = con.getResponseCode();
+		System.out.println("\nSending 'GET' request to URL : " + url);
+		System.out.println("Response Code : " + responseCode);
+		BufferedReader in = new BufferedReader(
+		new InputStreamReader(con.getInputStream()));
+		String inputLine;
+		StringBuffer response = new StringBuffer();
+		while ((inputLine = in.readLine()) != null) {
+			response.append(inputLine);
+		}
+		in.close();
+		//print in String
+		System.out.println(response.toString());
+		
 	}
 	
 	public void stopen() {
@@ -75,14 +106,16 @@ public class PoolThread extends Thread {
 
 	
 	public void datenSpeichern() throws IOException{
-		// t =System.currentTimeMillis();
 		
+		t =(System.currentTimeMillis()/1000);
 		try {
 			sample.setTime(t);
-	            
-	        //1 ist der wert der in die datenbank geschrieben wird 
+			
+	       
+	        //wert ist die variable die in die datenbank geschrieben wird 
 	        sample.setValue("temp1", wert);
 	        sample.setValue("temp2", (wert+1));
+	        
 	        System.out.println("daten in sample ");
 	               
 	        sample.update();
@@ -91,8 +124,9 @@ public class PoolThread extends Thread {
 	        }catch (Exception e){
 	        	System.out.println(e.getMessage());
 	        }
-	     t++;
+				//t++;
 	     wert ++;
+	    
 	}
 	
 	public void datenAuslesen() throws IOException{
@@ -105,11 +139,13 @@ public class PoolThread extends Thread {
 		// fetch data
 		System.out.println("---------------------------------------------\nDaten aus datenbank\n------------------------------------------");
 		FetchRequest request = rrdDb.createFetchRequest(AVERAGE, start, (t));
+		System.out.println(t + " Wenn Daten ausgegeben werden ausgegeben");
 		System.out.println(request.dump());
+		
+		
 		FetchData fetchData = request.fetchData();
 	       
 		System.out.println("HIER DIE DATEN!!!!!!\n" + fetchData.toString());
-	   
 		System.out.println("== Fetch completed");
 	}
 	    
@@ -118,33 +154,27 @@ public class PoolThread extends Thread {
 	public void dBErstellen ()throws IOException {
 		//Brauch ich das?
 		//System.setProperty("java.awt.headless","true");
-
+		
 		System.out.println("Datenbank erstellen");
 		        	        
         // creation
         System.out.println("== Creating RRD file " + rrdPath);
 		        
         //start-1 ist der Startwert und 1 die schrittgröße
-        rrdDef = new RrdDef(rrdPath, start - 1, 1);
+        
+        rrdDef = new RrdDef(rrdPath, start -1 , steps);
         rrdDef.setVersion(2);
         rrdDef.addDatasource("temp1", GAUGE, 300, 0, Double.NaN);
         rrdDef.addDatasource("temp2", GAUGE, 300, 0, Double.NaN);
-		       
+		
+        
         rrdDef.addArchive(AVERAGE, 0.5, 1, 600);
         rrdDef.addArchive(AVERAGE, 0.5, 6, 700);
         rrdDef.addArchive(AVERAGE, 0.5, 24, 775);
         rrdDef.addArchive(AVERAGE, 0.5, 288, 797);
-        rrdDef.addArchive(TOTAL, 0.5, 1, 600);
-		rrdDef.addArchive(TOTAL, 0.5, 6, 700);
-		rrdDef.addArchive(TOTAL, 0.5, 24, 775);
-	    rrdDef.addArchive(TOTAL, 0.5, 288, 797);
-		rrdDef.addArchive(MAX, 0.5, 1, 600);
-		rrdDef.addArchive(MAX, 0.5, 6, 700);
-		rrdDef.addArchive(MAX, 0.5, 24, 775);
-        rrdDef.addArchive(MAX, 0.5, 288, 797);
 		        
         System.out.println(rrdDef.dump());
-		        
+		     
         rrdDb = new RrdDb(rrdDef);
         
         try {
