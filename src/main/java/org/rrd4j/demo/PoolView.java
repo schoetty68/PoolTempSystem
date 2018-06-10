@@ -8,16 +8,18 @@ import java.awt.Color;
 import javax.swing.JLabel;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.util.Observable;
+import java.util.Observer;
 
 import javax.swing.SwingConstants;
 import javax.swing.JButton;
 
-public class PoolView extends JFrame{
+public class PoolView extends JFrame implements Observer{
 
 	private JPanel contentPane;
 
-	private JLabel einlaufTemp = new JLabel("");
-	private JLabel auslaufTemp = new JLabel("");
+	private JLabel vorlaufTemp = new JLabel("");
+	private JLabel ruecklaufTemp = new JLabel("");
 	private JButton stopBtn = new JButton("Stop");
 	
 	private PoolThread pt;
@@ -59,17 +61,17 @@ public class PoolView extends JFrame{
 		contentPane.add(mitte, BorderLayout.CENTER);
 		mitte.setLayout(new GridLayout(0, 2, 0, 0));
 		
-		JLabel lblEinlaufTemp = new JLabel("Einlauf Temperatur:");
-		lblEinlaufTemp.setHorizontalAlignment(SwingConstants.CENTER);
-		mitte.add(lblEinlaufTemp);
+		JLabel lblvorlaufTemp = new JLabel("Vorlauf Temperatur:");
+		lblvorlaufTemp.setHorizontalAlignment(SwingConstants.CENTER);
+		mitte.add(lblvorlaufTemp);
 		
-		mitte.add(einlaufTemp);
+		mitte.add(vorlaufTemp);
 		
-		JLabel lblAuslaufTemp = new JLabel("Auslauf Temperatur:");
-		lblAuslaufTemp.setHorizontalAlignment(SwingConstants.CENTER);
-		mitte.add(lblAuslaufTemp);
+		JLabel lblruecklaufTemp = new JLabel("Rücklauf Temperatur:");
+		lblruecklaufTemp.setHorizontalAlignment(SwingConstants.CENTER);
+		mitte.add(lblruecklaufTemp);
 		
-		mitte.add(auslaufTemp);
+		mitte.add(ruecklaufTemp);
 		
 		setVisible(true);
 	}
@@ -79,4 +81,10 @@ public class PoolView extends JFrame{
 		return stopBtn;
 	}
 
+
+	public void update(Observable o, Object arg) {
+		
+	}
+	
+	
 }
